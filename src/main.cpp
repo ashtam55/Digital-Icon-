@@ -16,6 +16,8 @@
 #include "display_kaaro.h"
 #include "kaaro_utils.cpp"
 
+#include <kaaroTouchAdmin.cpp>
+
 /* 
     STATICS
 */
@@ -32,8 +34,7 @@ const uint16_t WAIT_TIME = 1000;
 void displayScroll(char *pText, textPosition_t align, textEffect_t effect, uint16_t speed);
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 
-
-
+   
 /* 
  REALTIME VARIABLES
 */
@@ -45,7 +46,8 @@ unsigned long api_mtbs = 10000;
 unsigned long api_lasttime;
 
 long subs = 0;
-
+int buttonState= 0;
+int lastState = 0;
 
 String host = "ytkarta.s3.ap-south-1.amazonaws.com"; // Host => bucket-name.s3.region.amazonaws.com
 int port = 80;                                       // Non https. For HTTPS 443. As of today, HTTPS doesn't work.
@@ -67,8 +69,10 @@ uint32_t target_counter = 0;
 
 unsigned long delayStart = 0; // the time the delay started
 bool delayRunning = false;
-unsigned int interval = 30000;
+unsigned int interval = 15000;
 
+int total_touch_pins = 1;
+int pin_numbers[1] = {12};
 
 /*
   HY Variable/Instance creation
@@ -82,6 +86,40 @@ YoutubeApi api(API_KEY, client);
 DigitalIconDisplay display;
 elapsedMillis timeElapsed;
 
+void mqtt(int state){
+if (state == 1){
+      Serial.println("Next");
+      mqttClient.publish("kaaroEvent/dev2/screen1/input", "NEXT");
+}
+else if(state == 0){
+        // mqttClient.publish("kaaroEvent/dev1/screen1/input", "OPEN");
+
+}
+
+}
+
+void checkTouchpin(){
+  
+buttonState = kaaroTouchAdmin::getPinState(1);
+// Serial.printf("Button State = %d \n",buttonState);
+  // compare the buttonState to its previous state
+  if (buttonState != lastState) {
+    // if the state has changed, increment the counter
+    if (buttonState == HIGH) {
+      // if the current state is HIGH then the button went from off to on:
+      mqtt(1);
+      Serial.println("on");
+    } else {
+      mqtt(0);
+      // if the current state is LOW then the button went from on to off:
+      Serial.println("off");
+    }
+    // Delay a little bit to avoid bouncing
+    delay(100);
+  }
+  // save the current state as the last state, for next time through the loop
+  lastState = buttonState;
+}
 
 void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -95,14 +133,14 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   Serial.print("From MQTT = ");
   Serial.println(msg);
 
-  if (topics == "digitalicon/ota" && msg == "ota")
+  if (topics == "kaaroEvent/dev2/ota" && msg == "ota")
   {
     Serial.println("Ota Initiating.........");
 
     OTA_ESP32::execOTA(host, port, bin, &wifiClient);
   }
 
-  else if (topics == "digitalicon/ota/version")
+  else if (topics == "kaaroEvent/dev2/ota/version")
   {
   }
 
@@ -110,13 +148,13 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   {
     display.showCustomMessage(msg);
   }
-  if (topics == "digitalicon/91springboards1/count")
+  if (topics == "kaaroEvent/dev2/count")
   {
     Serial.println("From count topic");
     display.updateCounterValue(msg, true);
   }
 
-    if (topics == "digitalicon/91springboards1/message")
+    if (topics == "kaaroEvent/dev2/message")
   {
     Serial.println("From message topic");
     display.showCustomMessage(msg);
@@ -139,24 +177,23 @@ void reconnect()
     {
       Serial.println("connected");
 
-      String readyTopic = "digitalicon/" + DEVICE_MAC_ADDRESS;
+      String readyTopic = "kaaroEvent/dev2/" + DEVICE_MAC_ADDRESS;
       mqttClient.publish(readyTopic.c_str(), "Ready!");
       mqttClient.publish("digitalicon", "Ready!");
 
-      mqttClient.subscribe("digitalicon/ota");
-      mqttClient.subscribe("digitalicon/");
-      mqttClient.subscribe("digitalicon/91springboards1/message");
-      String otaTopic = "digitalicon/ota/" + DEVICE_MAC_ADDRESS;
+      mqttClient.subscribe("kaaroEvent/dev2/ota");
+      mqttClient.subscribe("kaaroEvent/dev2/");
+      mqttClient.subscribe("kaaroEvent/dev2/message");
+      String otaTopic = "kaaroEvent/dev2/" + DEVICE_MAC_ADDRESS;
       mqttClient.subscribe(otaTopic.c_str());
 
-      String msgTopic = "digitalicon/" + DEVICE_MAC_ADDRESS;
+      String msgTopic = "kaaroEvent/dev2/" + DEVICE_MAC_ADDRESS;
       mqttClient.subscribe(msgTopic.c_str());
 
-      mqttClient.subscribe("digitalicon/91springboards1/count");
-      String countTopic = "digitalicon/count" + DEVICE_MAC_ADDRESS;
+      mqttClient.subscribe("kaaroEvent/dev2/count/");
+      String countTopic = "kaaroEvent/dev2/count/" + DEVICE_MAC_ADDRESS;
       mqttClient.subscribe(countTopic.c_str());
     }
-
     else
     {
       Serial.print("failed, rc=");
@@ -167,6 +204,7 @@ void reconnect()
     }
   }
 }
+
 
 void setup()
 {
@@ -188,8 +226,12 @@ void setup()
     Serial.print(":");
     Serial.println(mac[5],HEX);
 
+
+  kaaroTouchAdmin::setTouchPinConfig(pin_numbers,total_touch_pins);
   display.setupIcon();
-  display.updateCounterValue("0", true);
+  display.showCustomMessage(" AQI");
+
+  display.updateCounterValue("786", true);
 
 
   Serial.print("Connecting Wifi: ");
@@ -218,8 +260,10 @@ void setup()
 void loop()
 {
 
+  kaaroTouchAdmin::loop();
   wifiManager.process();
 
+  checkTouchpin();
      if (timeElapsed > interval) 
   {				
       Serial.print("From here");
@@ -228,25 +272,30 @@ void loop()
         switch (cases)
         {
         case 1:
-          display.stripe();
-          cases = 2;
-          break;
-        case 2:
-        display.spiral();
-        cases = 3;
-        break;
-        case 3:
-        display.showCustomMessage(" Cowork.Network.Grow ");
-        cases = 4;
-        break;
-        case 4:
         display.bounce();
-        cases = 1;
+        // cases = 2;
+        // display.showCustomMessage(" AQI");
         break;
+        // case 2:
+        // display.spiral();
+        // cases = 3;
+        // display.showCustomMessage(" AQI");
+
+        // break;
+        // case 3:
+        // display.showCustomMessage(" Cowork.Network.Grow ");
+        // cases = 4;
+        // display.showCustomMessage(" AQI");
+        // break;
+        // case 4:
+        // display.stripe();
+        // cases = 1;
+        // display.showCustomMessage(" AQI");
+
+        // break;
         }
     timeElapsed = 0;
   }
-
   if (WiFi.status() == WL_CONNECTED)
   {
 
@@ -257,5 +306,4 @@ void loop()
   }
   mqttClient.loop(); 
   display.loop();
-
 }
