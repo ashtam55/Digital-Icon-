@@ -12,9 +12,11 @@
 #include <string>
 
 #include <ota.h>
-#include "display_kaaro.h"
+
 #include "kaaro_utils.cpp"
 #include <Preferences.h>
+
+#include <IRremote.h>
 
 /* 
     STATICS
@@ -23,31 +25,25 @@ const char *mqtt_server = "api.akriya.co.in";
 const uint16_t WAIT_TIME = 1000;
 #define BUF_SIZE 75
 
-String ROOT_MQ_ROOT = "digitalicon/";
-String PRODUCT_MQ_SUB = "91springboards1/";
+String ROOT_MQ_ROOT = "malboro/";
+String PRODUCT_MQ_SUB = "ir/";
 String MESSAGE_MQ_STUB = "message";
 String COUNT_MQ_STUB = "count";
 String OTA_MQ_SUB = "ota/";
-
-String PRODUCT_UNIQUE = " Cowork.Network.Grow ";
 
 /* 
     FUNCTION DEFINATIONS
 */
 
-void displayScroll(char *pText, textPosition_t align, textEffect_t effect, uint16_t speed);
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 
 /* 
  REALTIME VARIABLES
 */
 
-int contentLength = 0;
-bool isValidContentType = false;
-
 String host = "ytkarta.s3.ap-south-1.amazonaws.com"; // Host => bucket-name.s3.region.amazonaws.com
 int port = 80;                                       // Non https. For HTTPS 443. As of today, HTTPS doesn't work.
-String bin = "/kaaroMerch/SubsCount/firmware.bin";   // bin file name with a slash in front.
+String bin = "/Malboro/ir-recvr/firmware.bin";       // bin file name with a slash in front.
 
 char mo[75];
 String msg = "";
@@ -76,10 +72,14 @@ PubSubClient mqttClient(mqtt_server, 1883, mqttCallback, wifiClient);
 WiFiManager wifiManager;
 WiFiClientSecure client;
 
-DigitalIconDisplay display;
 elapsedMillis timeElapsed;
 Preferences preferences;
 #define convertToString(x) #x
+
+int RECV_PIN = 15;
+// 
+
+
 
 void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -111,28 +111,32 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
     OTA_ESP32::execOTA(host, port, bin, &wifiClient);
   }
 
-  else if (topics == "digitalicon/ota/version")
+  else if (topics == "malboro/ota/version")
   {
   }
 
   if (topics == rootTopic)
   {
-    display.showCustomMessage(msg);
+    //;;;
   }
   if (topics == productCountTopic)
   {
     Serial.println(msg + " | From count topic");
-    uint32_t counterVal = display.updateCounterValue(msg, true);
-    preferences.putUInt("target_counter", counterVal);
+
+    preferences.putUInt("target_counter", 0);
   }
 
   if (topics == productMessageTopic || topics == messageTopic)
   {
     Serial.println(msg + " | From message topic");
-    display.showCustomMessage(msg);
+    //;;;;
   }
-
-  
+  if (topics == "activate/now")
+  {
+    Serial.println("Enabling IRin");
+    // irrecv.enableIRIn(); // Start the receiver
+    Serial.println("Enabled IRin");
+  }
 }
 
 void reconnect()
@@ -172,6 +176,7 @@ void reconnect()
 
       mqttClient.subscribe(messageTopic.c_str());
       mqttClient.subscribe(countTopic.c_str());
+      mqttClient.subscribe("activate/now");
     }
 
     else
@@ -204,16 +209,11 @@ void setup()
   Serial.print(mac[4], HEX);
   Serial.print(":");
   Serial.println(mac[5], HEX);
-  preferences.begin("digitalicon", false);
-  target_counter = preferences.getUInt("target_counter", 720);
-  Serial.println("Boot setup with ");
-  Serial.println(target_counter);
+  preferences.begin("malboro", false);
 
   char str[100];
   sprintf(str, "%d", target_counter);
   String s = str;
-  display.setupIcon();
-  display.updateCounterValue(s, true);
 
   Serial.print("Connecting Wifi: ");
   wifiManager.setConnectTimeout(5);
@@ -243,33 +243,6 @@ void loop()
 
   wifiManager.process();
 
-  if (timeElapsed > interval)
-  {
-    Serial.print("From here");
-    // display.showCustomMessage(" Total ");
-
-    switch (cases)
-    {
-    case 1:
-      display.stripe();
-      cases = 2;
-      break;
-    case 2:
-      display.spiral();
-      cases = 3;
-      break;
-    case 3:
-      display.showCustomMessage(" Cowork.Network.Grow ");
-      cases = 4;
-      break;
-    case 4:
-      display.bounce();
-      cases = 1;
-      break;
-    }
-    timeElapsed = 0;
-  }
-
   if (WiFi.status() == WL_CONNECTED)
   {
 
@@ -279,5 +252,5 @@ void loop()
     }
   }
   mqttClient.loop();
-  display.loop();
+  // if (irrecv.decode(&results)
 }
