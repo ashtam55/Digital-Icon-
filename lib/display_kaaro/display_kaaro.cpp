@@ -25,8 +25,7 @@ void DigitalIconDisplay::stripe()
 // Demonstrates animation of a diagonal stripe moving across the display
 // with points plotted outside the display region ignored.
 {
-    mx.begin();
-    mx.control(MD_MAX72XX::INTENSITY, 10);
+
   const uint16_t maxCol = MAX_DEVICES*ROW_SIZE;
   const uint8_t	stripeWidth = 10;
 
@@ -119,7 +118,7 @@ void DigitalIconDisplay::bounce()
   }
 }
 
-void scrollText(char *p)
+void DigitalIconDisplay::scrollText(char *p)
 {
   uint8_t charWidth;
   uint8_t cBuf[8];  // this should be ok for all built-in fonts
@@ -140,6 +139,198 @@ void scrollText(char *p)
     }
   }
 }
+void DigitalIconDisplay::transformation1()
+// Demonstrates the use of transform() to move bitmaps on the display
+// In this case a user defined bitmap is created and animated.
+{
+    int  DELAYTIME  =  100;
+  uint8_t arrow[COL_SIZE] =
+  {
+//   0b00000000,
+//   0b00000010,
+//   0b00000010,
+//   0b00001010,
+//   0b00001010,
+//   0b00101010,
+//   0b00101010,
+//   0b10101010
+    0b00001000,
+    0b00011100,
+    0b00111110,
+    0b01111111,
+    0b00011100,
+    0b00011100,
+    0b00111110,
+    0b00000000
+  };
+
+  MD_MAX72XX::transformType_t  t[] =
+  {
+    MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL,
+    MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL,
+    MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL,
+    MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL, MD_MAX72XX::TSL,
+    MD_MAX72XX::TFLR,
+    MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR,
+    MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR,
+    MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR,
+    MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR, MD_MAX72XX::TSR,
+    MD_MAX72XX::TRC,
+    MD_MAX72XX::TSD, MD_MAX72XX::TSD, MD_MAX72XX::TSD, MD_MAX72XX::TSD,
+    MD_MAX72XX::TSD, MD_MAX72XX::TSD, MD_MAX72XX::TSD, MD_MAX72XX::TSD,
+    MD_MAX72XX::TFUD,
+    MD_MAX72XX::TSU, MD_MAX72XX::TSU, MD_MAX72XX::TSU, MD_MAX72XX::TSU,
+    MD_MAX72XX::TSU, MD_MAX72XX::TSU, MD_MAX72XX::TSU, MD_MAX72XX::TSU,
+    MD_MAX72XX::TINV,
+    MD_MAX72XX::TRC, MD_MAX72XX::TRC, MD_MAX72XX::TRC, MD_MAX72XX::TRC,
+    MD_MAX72XX::TINV
+  };
+
+  Serial.println("\nTransformation1");
+  mx.clear();
+
+  // use the arrow bitmap
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
+  for (uint8_t j=0; j<mx.getDeviceCount(); j++)
+    mx.setBuffer(((j+1)*COL_SIZE)-1, COL_SIZE, arrow);
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
+  delay(DELAYTIME);
+
+  // run through the transformations
+  mx.control(MD_MAX72XX::WRAPAROUND, MD_MAX72XX::ON);
+  for (uint8_t i=0; i<(sizeof(t)/sizeof(t[0])); i++)
+  {
+    mx.transform(t[i]);
+    delay(DELAYTIME*4);
+  }
+  mx.control(MD_MAX72XX::WRAPAROUND, MD_MAX72XX::OFF);
+}
+void DigitalIconDisplay::cross()
+// Combination of setRow() and setColumn() with user controlled
+// display updates to ensure concurrent changes.
+{
+    int  DELAYTIME  =  300;  // in milliseconds 
+  Serial.println("\nMoving cross");
+  mx.clear();
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
+
+  // diagonally down the display R to L
+  for (uint8_t i=0; i<ROW_SIZE; i++)
+  {
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0xff);
+      mx.setRow(j, i, 0xff);
+    }
+    mx.update();
+    delay(DELAYTIME);
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0x00);
+      mx.setRow(j, i, 0x00);
+    }
+  }
+
+  // moving up the display on the R
+  for (int8_t i=ROW_SIZE-1; i>=0; i--)
+  {
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0xff);
+      mx.setRow(j, ROW_SIZE-1, 0xff);
+    }
+    mx.update();
+    delay(DELAYTIME);
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0x00);
+      mx.setRow(j, ROW_SIZE-1, 0x00);
+    }
+  }
+
+  // diagonally up the display L to R
+  for (uint8_t i=0; i<ROW_SIZE; i++)
+  {
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0xff);
+      mx.setRow(j, ROW_SIZE-1-i, 0xff);
+    }
+    mx.update();
+    delay(DELAYTIME);
+    for (uint8_t j=0; j<MAX_DEVICES; j++)
+    {
+      mx.setColumn(j, i, 0x00);
+      mx.setRow(j, ROW_SIZE-1-i, 0x00);
+    }
+  }
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
+}
+void DigitalIconDisplay::bullseye()
+// Demonstrate the use of buffer based repeated patterns
+// across all devices.
+{
+   int  DELAYTIME  =  100;  // in milliseconds 
+  Serial.println("\nBullseye");
+  mx.clear();
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
+
+  for (uint8_t n=0; n<3; n++)
+  {
+    byte  b = 0xff;
+    int   i = 0;
+
+    while (b != 0x00)
+    {
+      for (uint8_t j=0; j<MAX_DEVICES+1; j++)
+      {
+        mx.setRow(j, i, b);
+        mx.setColumn(j, i, b);
+        mx.setRow(j, ROW_SIZE-1-i, b);
+        mx.setColumn(j, COL_SIZE-1-i, b);
+      }
+      mx.update();
+      delay(3*DELAYTIME);
+      for (uint8_t j=0; j<MAX_DEVICES+1; j++)
+      {
+        mx.setRow(j, i, 0);
+        mx.setColumn(j, i, 0);
+        mx.setRow(j, ROW_SIZE-1-i, 0);
+        mx.setColumn(j, COL_SIZE-1-i, 0);
+      }
+
+      bitClear(b, i);
+      bitClear(b, 7-i);
+      i++;
+    }
+
+    while (b != 0xff)
+    {
+      for (uint8_t j=0; j<MAX_DEVICES+1; j++)
+      {
+        mx.setRow(j, i, b);
+        mx.setColumn(j, i, b);
+        mx.setRow(j, ROW_SIZE-1-i, b);
+        mx.setColumn(j, COL_SIZE-1-i, b);
+      }
+      mx.update();
+      delay(3*DELAYTIME);
+      for (uint8_t j=0; j<MAX_DEVICES+1; j++)
+      {
+        mx.setRow(j, i, 0);
+        mx.setColumn(j, i, 0);
+        mx.setRow(j, ROW_SIZE-1-i, 0);
+        mx.setColumn(j, COL_SIZE-1-i, 0);
+      }
+
+      i--;
+      bitSet(b, i);
+      bitSet(b, 7-i);
+    }
+  }
+
+  mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
+}
 
 
 
@@ -149,6 +340,15 @@ int DigitalIconDisplay::setupIcon()
     ParolaDisplay.begin();
     ParolaDisplay.setInvert(false);
     ParolaDisplay.setIntensity(15);
+
+    mx.begin();
+    mx.control(MD_MAX72XX::INTENSITY, 10);
+        // delay(100);
+        // mx.setPoint(3,8,false);
+        // mx.setPoint(4,8,false);
+        // mx.setPoint(3,9,false);
+        // mx.setPoint(4,9,false);
+
     ParolaDisplay.displayText(BOOT_TEXT, PA_CENTER, 70, 100, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
         delay(1000);
     ParolaDisplay.displayAnimate();
@@ -164,6 +364,7 @@ int DigitalIconDisplay::updateDisplayState(di_display_states updated_state)
     {
     case BOOTING:
         /* code */
+
         break;
 
     case CONNECTING:
@@ -319,6 +520,8 @@ int DigitalIconDisplay::refreshScreenWithCounter()
     ParolaDisplay.setFont(numeric7Seg);
     // P.displayText(msg.c_str(), PA_CENTER, 70, 1000, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
     ParolaDisplay.print(String(counter_value).c_str());
+    ParolaDisplay.displayAnimate();
+
     return 1;
 }
 

@@ -10,7 +10,7 @@
 #define DATA_PIN 23
 #define CS_PIN 15
 
-#define BOOT_TEXT " Cowork.Network.Grow "
+#define BOOT_TEXT " #YoLo "
 #define TIMEOUT_PERIOD 9000
 
 enum di_display_states
@@ -55,6 +55,9 @@ public:
     void stripe();
     void spiral();
     void bounce();
+    void bullseye();
+    void cross();
+    void transformation1();
     void scrollText(char *p);
     int updateCounterValue(uint32_t new_counter_value);
     int updateCounterValue(String new_counter_value, bool isString);
