@@ -30,7 +30,8 @@ String PRODUCT_MQ_SUB = "ir/";
 String MESSAGE_MQ_STUB = "message";
 String COUNT_MQ_STUB = "count";
 String OTA_MQ_SUB = "ota/";
-
+long long lastUpdated = 0;
+long long THRESHOLD = 3000;
 /* 
     FUNCTION DEFINATIONS
 */
@@ -77,8 +78,8 @@ Preferences preferences;
 #define convertToString(x) #x
 
 int RECV_PIN = 15;
-// 
-
+IRrecv irrecv(RECV_PIN);
+decode_results results;
 
 
 void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
@@ -134,7 +135,7 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   if (topics == "activate/now")
   {
     Serial.println("Enabling IRin");
-    // irrecv.enableIRIn(); // Start the receiver
+    irrecv.enableIRIn(); // Start the receiver
     Serial.println("Enabled IRin");
   }
 }
@@ -153,7 +154,7 @@ void reconnect()
     {
       Serial.println("connected");
 
-      String rootTopic = ROOT_MQ_ROOT;
+      String rootTopic = ROOT_MQ_ROOT;                        
       String readyTopic = ROOT_MQ_ROOT + DEVICE_MAC_ADDRESS;
 
       String otaTopic = ROOT_MQ_ROOT + OTA_MQ_SUB + DEVICE_MAC_ADDRESS;
@@ -210,7 +211,8 @@ void setup()
   Serial.print(":");
   Serial.println(mac[5], HEX);
   preferences.begin("malboro", false);
-
+  
+  
   char str[100];
   sprintf(str, "%d", target_counter);
   String s = str;
@@ -236,6 +238,10 @@ void setup()
 
   mqttClient.setServer(mqtt_server, 1883);
   mqttClient.setCallback(mqttCallback);
+
+  Serial.println("Enabling IRin");
+  irrecv.enableIRIn(); // Start the receiver
+  Serial.println("Enabled IRin");
 }
 
 void loop()
@@ -252,5 +258,16 @@ void loop()
     }
   }
   mqttClient.loop();
-  // if (irrecv.decode(&results)
+
+    if (irrecv.decode(&results)) {
+    // Serial.println(results.value, HEX);
+    Serial.println("Picked Item ");
+    long long currentMillis = millis();
+      if(currentMillis - lastUpdated > THRESHOLD) {
+        lastUpdated = millis();
+        mqttClient.publish("malboro/activate/now","Now");
+      }
+    irrecv.resume(); // Receive the next value
+  }
+  delay(100);
 }
