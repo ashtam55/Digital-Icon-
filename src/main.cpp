@@ -36,7 +36,7 @@ String OTA_MQ_SUB = "ota/";
 */
 
 void mqttCallback(char *topic, byte *payload, unsigned int length);
-
+void blasterLoop();
 /* 
  REALTIME VARIABLES
 */
@@ -77,9 +77,6 @@ Preferences preferences;
 #define convertToString(x) #x
 
 int RECV_PIN = 15;
-// 
-
-
 
 void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -197,27 +194,13 @@ void setup()
   DEVICE_MAC_ADDRESS = KaaroUtils::getMacAddress();
   Serial.println(DEVICE_MAC_ADDRESS);
   WiFi.macAddress(mac);
-  Serial.print("MAC: ");
-  Serial.print(mac[0], HEX);
-  Serial.print(":");
-  Serial.print(mac[1], HEX);
-  Serial.print(":");
-  Serial.print(mac[2], HEX);
-  Serial.print(":");
-  Serial.print(mac[3], HEX);
-  Serial.print(":");
-  Serial.print(mac[4], HEX);
-  Serial.print(":");
-  Serial.println(mac[5], HEX);
   preferences.begin("malboro", false);
-
+  pinMode(mb_pin, OUTPUT);
   char str[100];
   sprintf(str, "%d", target_counter);
   String s = str;
-
   Serial.print("Connecting Wifi: ");
   wifiManager.setConnectTimeout(5);
-
   wifiManager.setConfigPortalBlocking(false);
   wifiManager.setWiFiAutoReconnect(true);
   wifiManager.autoConnect("Digital Icon");
@@ -252,5 +235,29 @@ void loop()
     }
   }
   mqttClient.loop();
+  blasterLoop()
   // if (irrecv.decode(&results)
+}
+
+const int mb_pin = 16;
+
+void onEdge() {
+  digitalWrite(mb_pin, HIGH);
+  delayMicroseconds(13);
+  digitalWrite(mb_pin, LOW);
+  delayMicroseconds(13);
+}
+
+void offEdge() {
+  digitalWrite(mb_pin, LOW);
+  delayMicroseconds(26);
+}
+void blasterLoop()
+{
+  for(int i=0;i<7;i++) {
+    onEdge();
+  }
+  for(int i=0;i<10;i++) {
+    offEdge();
+  }
 }
