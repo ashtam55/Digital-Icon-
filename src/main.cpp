@@ -2,9 +2,7 @@
 #include <SPI.h>
 
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <WiFiManager.h>
-#include <DNSServer.h>
+
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <Update.h>
@@ -21,7 +19,7 @@
 /* 
     STATICS
 */
-const char *mqtt_server = "api.akriya.co.in";
+const char* mqtt_server = "192.168.4.1";
 const uint16_t WAIT_TIME = 1000;
 #define BUF_SIZE 75
 
@@ -49,8 +47,8 @@ String bin = "/Malboro/ir-recvr/firmware.bin";       // bin file name with a sla
 char mo[75];
 String msg = "";
 String DEVICE_MAC_ADDRESS;
-String ssid = "";
-String pass = "";
+char ssid[] = "wendor";
+char pass[] = "passwordisone";
 
 byte mac[6];
 
@@ -69,9 +67,7 @@ unsigned int interval = 30000;
 */
 
 WiFiClient wifiClient;
-PubSubClient mqttClient(mqtt_server, 1883, mqttCallback, wifiClient);
-WiFiManager wifiManager;
-WiFiClientSecure client;
+PubSubClient mqttClient(mqtt_server, 1884, mqttCallback, wifiClient);
 
 elapsedMillis timeElapsed;
 Preferences preferences;
@@ -218,11 +214,13 @@ void setup()
   String s = str;
 
   Serial.print("Connecting Wifi: ");
-  wifiManager.setConnectTimeout(5);
+  
+  WiFi.begin(ssid,pass);
 
-  wifiManager.setConfigPortalBlocking(false);
-  wifiManager.setWiFiAutoReconnect(true);
-  wifiManager.autoConnect("Digital Icon");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
 
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -231,12 +229,7 @@ void setup()
     Serial.println("IP address: ");
     IPAddress ip = WiFi.localIP();
     Serial.println(ip);
-
-    ssid = WiFi.SSID();
-    pass = WiFi.psk();
   }
-
-  mqttClient.setServer(mqtt_server, 1883);
   mqttClient.setCallback(mqttCallback);
 
   Serial.println("Enabling IRin");
@@ -246,8 +239,6 @@ void setup()
 
 void loop()
 {
-
-  wifiManager.process();
 
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -260,12 +251,12 @@ void loop()
   mqttClient.loop();
 
     if (irrecv.decode(&results)) {
-    // Serial.println(results.value, HEX);
-    Serial.println("Picked Item ");
+    Serial.println(results.value, HEX);
+    // Serial.println("Picked Item ");
     long long currentMillis = millis();
       if(currentMillis - lastUpdated > THRESHOLD) {
         lastUpdated = millis();
-        mqttClient.publish("malboro/activate/now","Now");
+        mqttClient.publish("prod/activate/now","Now");
       }
     irrecv.resume(); // Receive the next value
   }
