@@ -23,6 +23,11 @@ const char* mqtt_server = "192.168.4.1";
 const uint16_t WAIT_TIME = 1000;
 #define BUF_SIZE 75
 
+unsigned long long current_loop_counter = 0;
+uint16_t current_brain_counter = 0;
+
+const unsigned long long brain_beat = 1000;
+
 String ROOT_MQ_ROOT = "malboro/";
 String PRODUCT_MQ_SUB = "ir/";
 String MESSAGE_MQ_STUB = "message";
@@ -35,6 +40,7 @@ long long THRESHOLD = 3000;
 */
 
 void mqttCallback(char *topic, byte *payload, unsigned int length);
+void pushEveryLoop();
 
 /* 
  REALTIME VARIABLES
@@ -73,10 +79,52 @@ elapsedMillis timeElapsed;
 Preferences preferences;
 #define convertToString(x) #x
 
-int RECV_PIN = 15;
+int RECV_PIN = 5;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
+//  int RECV_PIN_2 = 23;
+// IRrecv irrecv1(RECV_PIN_2);
 
+
+static int taskCore = 1;
+const int mb_pin = 16;
+
+void onEdge() {
+  digitalWrite(mb_pin, HIGH);
+  delayMicroseconds(13);
+  digitalWrite(mb_pin, LOW);
+  delayMicroseconds(13);
+}
+
+void offEdge() {
+  digitalWrite(mb_pin, LOW);
+  delayMicroseconds(26);
+}
+ 
+void coreTask( void * pvParameters ){
+
+ 
+    String taskMessage = "Task running on core ";
+    taskMessage = taskMessage + xPortGetCoreID();
+    Serial.println(taskMessage);
+
+    while(true){
+        // Serial.println(taskMessage);
+        // delay(1000);
+    for(int i=0;i<7;i++) {
+    onEdge();
+            // Serial.print(".");
+
+  }
+  for(int i=0;i<10;i++) {
+    offEdge();
+            // Serial.print("-");
+
+  }
+
+    }
+ 
+}
 
 void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -132,6 +180,7 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   {
     Serial.println("Enabling IRin");
     irrecv.enableIRIn(); // Start the receiver
+    // irrecv1.enableIRIn();
     Serial.println("Enabled IRin");
   }
 }
@@ -191,6 +240,18 @@ void setup()
 {
 
   Serial.begin(115200);
+     pinMode(mb_pin, OUTPUT);
+  xTaskCreatePinnedToCore(
+                    coreTask,   /* Function to implement the task */
+                    "coreTask", /* Name of the task */
+                    10000,      /* Stack size in words */
+                    NULL,       /* Task input parameter */
+                    1,          /* Priority of the task */
+                    NULL,       /* Task handle. */
+                    taskCore);  /* Core where the task should run */
+ 
+  Serial.println("Task created...");
+
   DEVICE_MAC_ADDRESS = KaaroUtils::getMacAddress();
   Serial.println(DEVICE_MAC_ADDRESS);
   WiFi.macAddress(mac);
@@ -234,7 +295,10 @@ void setup()
 
   Serial.println("Enabling IRin");
   irrecv.enableIRIn(); // Start the receiver
+  // irrecv1.enableIRIn();
   Serial.println("Enabled IRin");
+
+  
 }
 
 void loop()
@@ -259,6 +323,20 @@ void loop()
         mqttClient.publish("prod/activate/now","Now");
       }
     irrecv.resume(); // Receive the next value
+    // irrecv1.resume();
   }
-  delay(100);
+  delay(10);
+  pushEveryLoop();
+}
+
+
+void pushEveryLoop() {
+  
+  
+  if(current_loop_counter%brain_beat == 0) {
+    
+    Serial.printf("Current loop #%d x %llu \n",current_brain_counter, brain_beat);
+    current_brain_counter++;
+  }
+  current_loop_counter++;
 }
