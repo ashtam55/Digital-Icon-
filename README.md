@@ -16,3 +16,5 @@ Module for Object detection using IR
 
 
 > Communication Layer is MQTT, channel for activation is `malboro/activate/now`
+
+![Image of the Setup](https://akriya.co.in/assets/images/ir-detect.jpg | width=100)
