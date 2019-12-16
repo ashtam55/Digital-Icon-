@@ -1,13 +1,18 @@
-# Digital Icon
-A Frame which tells about your Fame.
+# Digital Icon - IR Blaster Reciever Branch
+Module for Object detection using IR
 
 
-## Displays
-* Booting-up                    P2  done
-* Waiting to connect to Wifi    P1  to change values
-* Getting Counter from Cloud    P2  -
-* Counter - Mode                P0  done
-* Congtulations/Milestone       P1  device done - Cloud need work
-* OTA/Updating Mode             P1  engine done - UI work
-* Error/Debug                   P0  toDO
-* Restart required              P0  toDO
+``` Setting up requires Local PI with broker (client required a closed loop)```
+
+### Local Pi functions
+* MQTT Broker
+* Access Point
+* Web based Media Output
+* File storage for Media assets
+
+
+### Sensor Inputs
+* Object detection using IR
+
+
+> Communication Layer is MQTT, channel for activation is `malboro/activate/now`
