@@ -34,6 +34,7 @@ String ROOT_MQ_ROOT = "digitalicon/";
 String PRODUCT_MQ_SUB = "kaaroCount/";
 String MESSAGE_MQ_STUB = "message";
 String COUNT_MQ_STUB = "count";
+String STUB_MQ_STUB = "stub";
 String OTA_MQ_SUB = "ota/";
 
 String presenceTopic;
@@ -46,10 +47,11 @@ String otaTopic;
 
 String productMessageTopic;
 String productCountTopic;
+String productStubTopic;
 
 String messageTopic;
 String countTopic;
-  
+String deviceTopic;
 
 String PRODUCT_UNIQUE = " Hakuna Matata ";
 
@@ -148,6 +150,23 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
     display.showCustomMessage(msg);
   }
 
+  if (topics == deviceTopic) {
+    mqttClient.unsubscribe(productMessageTopic.c_str());
+    mqttClient.unsubscribe(productCountTopic.c_str());
+    mqttClient.unsubscribe(productStubTopic.c_str());
+    
+    PRODUCT_MQ_SUB = msg + '/';
+    mqttSetTopicValues();
+
+    mqttClient.subscribe(productMessageTopic.c_str());
+    mqttClient.subscribe(productCountTopic.c_str());
+    mqttClient.subscribe(productStubTopic.c_str());
+    
+  }
+
+  if (topics == productStubTopic) {
+    PRODUCT_UNIQUE = msg;
+  }
   
 }
 
@@ -157,11 +176,13 @@ void mqttSetTopicValues() {
   
   rootTopic = ROOT_MQ_ROOT;
   readyTopic = ROOT_MQ_ROOT + DEVICE_MAC_ADDRESS;
+  deviceTopic = ROOT_MQ_ROOT + DEVICE_MAC_ADDRESS + "/devops";
 
   otaTopic = ROOT_MQ_ROOT + OTA_MQ_SUB + DEVICE_MAC_ADDRESS;
 
   productMessageTopic = ROOT_MQ_ROOT + PRODUCT_MQ_SUB + MESSAGE_MQ_STUB;
   productCountTopic = ROOT_MQ_ROOT + PRODUCT_MQ_SUB + COUNT_MQ_STUB;
+  productStubTopic = ROOT_MQ_ROOT + PRODUCT_MQ_SUB + STUB_MQ_STUB;
 
   messageTopic = ROOT_MQ_ROOT + MESSAGE_MQ_STUB + '/' + DEVICE_MAC_ADDRESS;
   countTopic = ROOT_MQ_ROOT + COUNT_MQ_STUB + '/' + DEVICE_MAC_ADDRESS;
@@ -185,13 +206,14 @@ void reconnect()
       mqttClient.publish(readyTopic.c_str(), "Ready!");
       mqttClient.publish(rootTopic.c_str(), readyMessage.c_str());
       mqttClient.publish(presenceTopic.c_str(), "0");
-
+      
       mqttClient.subscribe(rootTopic.c_str());
       mqttClient.subscribe(otaTopic.c_str());
       mqttClient.subscribe(presenceDemandTopic.c_str());
+      mqttClient.subscribe(deviceTopic.c_str());
       mqttClient.subscribe(productMessageTopic.c_str());
       mqttClient.subscribe(productCountTopic.c_str());
-
+      mqttClient.subscribe(productStubTopic.c_str());
       mqttClient.subscribe(messageTopic.c_str());
       mqttClient.subscribe(countTopic.c_str());
     }
