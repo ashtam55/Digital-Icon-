@@ -31,7 +31,7 @@ const unsigned long long brain_beat = 1000000;
 
 String META_ROOT = "Kento/present/";
 String ROOT_MQ_ROOT = "digitalicon/";
-String PRODUCT_MQ_SUB = "officialkrat/";
+String PRODUCT_MQ_SUB = "kkattand/";
 String MESSAGE_MQ_STUB = "message";
 String COUNT_MQ_STUB = "count";
 String OTA_MQ_SUB = "ota/";
@@ -51,7 +51,7 @@ String messageTopic;
 String countTopic;
   
 
-String PRODUCT_UNIQUE = " @officialkrat ";
+String PRODUCT_UNIQUE = " Rounds played Today ";
 
 /* 
     FUNCTION DEFINATIONS
@@ -174,7 +174,7 @@ void reconnect()
   {
     Serial.print("Attempting MQTT connection...");
 
-    String clientId = "ESP8266Client-";
+    String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
 
     if (mqttClient.connect(clientId.c_str()))
@@ -217,7 +217,8 @@ void WiFiReconnect(){
   // WiFi.begin(ssid.c_str(),pass.c_str());
 if (wifiManager.getWiFiIsSaved()){
       // wifiManager.stopConfigPortal();
-    wifiManager.autoConnect("Digital Icon");
+    String DeviceSSID = "Digital Icon - " + DEVICE_MAC_ADDRESS;
+    wifiManager.autoConnect(DeviceSSID.c_str());
 }
     if (WiFi.status() == WL_CONNECTED)
   {
@@ -266,7 +267,8 @@ void setup()
 
   wifiManager.setConfigPortalBlocking(false);
   wifiManager.setWiFiAutoReconnect(true);
-  wifiManager.autoConnect("Digital Icon");
+  String DeviceSSID = "Digital Icon - " + DEVICE_MAC_ADDRESS;
+  wifiManager.autoConnect(DeviceSSID.c_str());
 
   if (WiFi.status() == WL_CONNECTED)
   {
