@@ -148,7 +148,7 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   if (topics == intervalTopic)
   {
     Serial.println(msg + " | From interval topic");
-    interval = KaaroUtils::stoi(msg, msg.length);
+    interval = KaaroUtils::stoi(msg, msg.length());
     preferences.putUInt("animation_interval", interval);
   }
 
