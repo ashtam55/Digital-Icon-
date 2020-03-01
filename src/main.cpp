@@ -1,4 +1,4 @@
-# define DI_Version "1.0.2-kaaroCount"
+# define DI_Version "1.0.4-kaaroCount"
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -33,6 +33,7 @@ String META_ROOT = "Kento/present/";
 String ROOT_MQ_ROOT = "digitalicon/";
 String PRODUCT_MQ_SUB = "kaaroCount/";
 String MESSAGE_MQ_STUB = "message";
+String INTERVAL_MQ_STUB = "interval";
 String COUNT_MQ_STUB = "count";
 String STUB_MQ_STUB = "stub";
 String OTA_MQ_SUB = "ota/";
@@ -51,6 +52,7 @@ String productStubTopic;
 
 String messageTopic;
 String countTopic;
+String intervalTopic;
 String deviceTopic;
 
 String PRODUCT_UNIQUE = " Hakuna Matata ";
@@ -90,7 +92,7 @@ uint32_t target_counter = 0;
 
 unsigned long delayStart = 0; // the time the delay started
 bool delayRunning = false;
-unsigned int interval = 30000;
+unsigned int interval = 10000;
 
 /*
   HY Variable/Instance creation
@@ -143,6 +145,12 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
     uint32_t counterVal = display.updateCounterValue(msg, true);
     preferences.putUInt("target_counter", counterVal);
   }
+  if (topics == intervalTopic)
+  {
+    Serial.println(msg + " | From interval topic");
+    interval = KaaroUtils::stoi(msg, msg.length);
+    preferences.putUInt("animation_interval", interval);
+  }
 
   if (topics == productMessageTopic || topics == messageTopic)
   {
@@ -166,6 +174,7 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 
   if (topics == productStubTopic) {
     PRODUCT_UNIQUE = msg;
+    preferences.putString("product_unique", PRODUCT_UNIQUE);
   }
   
 }
@@ -186,6 +195,7 @@ void mqttSetTopicValues() {
 
   messageTopic = ROOT_MQ_ROOT + MESSAGE_MQ_STUB + '/' + DEVICE_MAC_ADDRESS;
   countTopic = ROOT_MQ_ROOT + COUNT_MQ_STUB + '/' + DEVICE_MAC_ADDRESS;
+  intervalTopic = ROOT_MQ_ROOT + INTERVAL_MQ_STUB + '/' + DEVICE_MAC_ADDRESS;
 }
 
 void reconnect()
@@ -216,6 +226,7 @@ void reconnect()
       mqttClient.subscribe(productStubTopic.c_str());
       mqttClient.subscribe(messageTopic.c_str());
       mqttClient.subscribe(countTopic.c_str());
+      mqttClient.subscribe(intervalTopic.c_str());
     }
 
     else
@@ -237,20 +248,11 @@ void setup()
   mqttSetTopicValues();
   Serial.println(DEVICE_MAC_ADDRESS);
   WiFi.macAddress(mac);
-  Serial.print("MAC: ");
-  Serial.print(mac[0], HEX);
-  Serial.print(":");
-  Serial.print(mac[1], HEX);
-  Serial.print(":");
-  Serial.print(mac[2], HEX);
-  Serial.print(":");
-  Serial.print(mac[3], HEX);
-  Serial.print(":");
-  Serial.print(mac[4], HEX);
-  Serial.print(":");
-  Serial.println(mac[5], HEX);
+  
   preferences.begin("digitalicon", false);
   target_counter = preferences.getUInt("target_counter", 720);
+  PRODUCT_UNIQUE = preferences.getString("product_unique", " Hakuna Matata ");
+  interval = preferences.getUInt("animation_interval", 100000);
   Serial.println("Boot setup with ");
   Serial.println(target_counter);
 

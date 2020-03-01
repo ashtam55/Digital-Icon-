@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "/Users/kaaro/src/Digital_Icon"
+		},
+		{
+			"name": "Mini-test",
+			"path": "/Users/kaaro/Documents/PlatformIO/Projects/Mini-test"
+		}
+	],
+	"settings": {
+		"terminal.integrated.env.osx": {
+			"PATH": "/Users/kaaro/.platformio/penv/bin:/Users/kaaro/.platformio/penv:/Users/kaaro/.rvm/gems/ruby-2.6.3/bin:/Users/kaaro/.rvm/gems/ruby-2.6.3@global/bin:/Users/kaaro/.rvm/rubies/ruby-2.6.3/bin:/Users/kaaro/bin:/usr/local/opt/ruby/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/kaaro/.rvm/bin",
+			"PLATFORMIO_CALLER": "vscode"
+		},
+		"files.associations": {
+			"string": "cpp"
+		}
+	}
+}
