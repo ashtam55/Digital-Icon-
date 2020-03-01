@@ -2,8 +2,7 @@
 
 class KaaroUtils
 {
-    public:
-    
+public:
     static String getMacAddress()
     {
         uint8_t baseMac[6];
@@ -22,5 +21,16 @@ class KaaroUtils
 
         return String(hwMacStringReady);
     }
+    static uint32_t stoi(String payload, int len)
+    {
+        uint32_t i = 0;
+        uint32_t result = 0;
+        for (i = 0; i < len; i++)
+        {
+            result *= 10;
+            result += (char)payload[i] - '0';
+        }
 
+        return result;
+    }
 };
