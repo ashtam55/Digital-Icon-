@@ -275,7 +275,7 @@ void setup()
   preferences.begin("digitalicon", false);
   target_counter = preferences.getUInt("target_counter", 21);
   PRODUCT_UNIQUE = preferences.getString("product_unique", " Hakuna Matata ");
-  interval = preferences.getUInt("animation_interval", 100000);
+  interval = preferences.getUInt("animation_interval", 10000);
   Serial.println("Boot setup with ");
   Serial.println(target_counter);
 
