@@ -148,7 +148,7 @@ void mqttCallback(char *topic, uint8_t *payload, unsigned int length)
   if (topics == intervalTopic)
   {
     Serial.println(msg + " | From interval topic");
-    interval = KaaroUtils::stoi(msg, msg.length);
+    interval = KaaroUtils::stoi(msg, msg.length());
     preferences.putUInt("animation_interval", interval);
   }
 
@@ -273,13 +273,9 @@ void setup()
   WiFi.macAddress(mac);
   
   preferences.begin("digitalicon", false);
-<<<<<<< HEAD
-  target_counter = preferences.getUInt("target_counter", 499);
-=======
   target_counter = preferences.getUInt("target_counter", 720);
   PRODUCT_UNIQUE = preferences.getString("product_unique", " Hakuna Matata ");
   interval = preferences.getUInt("animation_interval", 100000);
->>>>>>> product/kaaroCount
   Serial.println("Boot setup with ");
   Serial.println(target_counter);
 
@@ -294,7 +290,7 @@ void setup()
 
   wifiManager.setConfigPortalBlocking(false);
   wifiManager.setWiFiAutoReconnect(true);
-  wifiManager.autoConnect("Digital Icon");
+  wifiManager.autoConnect("HomeSwitch DI");
 
   if (WiFi.status() == WL_CONNECTED)
   {
